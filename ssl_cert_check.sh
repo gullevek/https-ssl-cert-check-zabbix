@@ -189,8 +189,8 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 
 	case "$check_type" in
 		"valid")
-			 result $valid
-			 ;;
+			result $valid
+			;;
 		"json")
 			days=$(get_expire_days)
 			result "{\"expire_days\": ${days}, \"valid\": ${valid}, \"return_code\": ${verify_return_code}, \"return_text\": \"${verify_return_text}\"}"
