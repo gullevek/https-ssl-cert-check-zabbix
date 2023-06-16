@@ -192,8 +192,58 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 			result $valid
 			;;
 		"json")
+			# add more detailed CA info
+			not_before="";
+			not_after="";
+			serial="";
+			fingerprint="";
+			issuer="";
+			san="";
+			wildcard=0;
+			san_read=0;
+			while read line; do
+				# echo "L: $line";
+				if echo $line | grep -q 'notBefore='; then
+					not_before=$(echo $line | cut -d "=" -f 2);
+					san_read=0;
+				elif echo $line | grep -q 'notAfter='; then
+					not_after=$(echo $line | cut -d "=" -f 2);
+					san_read=0;
+				elif echo $line | grep -q 'serial='; then
+					serial=$(echo $line | cut -d "=" -f 2);
+					san_read=0;
+				elif echo $line | grep -q 'Fingerprint='; then
+					fingerprint=$(echo $line | cut -d "=" -f 2);
+					san_read=0;
+				elif echo $line | grep -q 'issuer='; then
+					# must strip leading and trailing spaces
+					# convert all " into escaped for json
+					issuer=$(echo $line | cut -d "=" -f 2- | sed -e 's/^[[:space:]]*//' | sed -e 's/"/\\"/g');
+					san_read=0;
+				elif echo $line | grep -q 'X509v3 Subject Alternative Name:'; then
+					# trigger that next read is alt names until end or other is triggered
+					san_read=1;
+				elif echo $line | grep -q 'subject='; then
+					# do we have * inside
+					if echo $line | grep -q '*'; then
+						wildcard=1;
+					fi;
+					san_read=0;
+				elif [ $san_read -eq 1 ]; then
+					# note if this as an @name group, this will not work
+					san_list=();
+					for sl in $(echo $line | sed -e 's/^[[:space:]]*//' | sed -e 's/DNS://g'); do
+						sl=$(echo $sl | sed -e 's/,//');
+						if [ "$sl" != "$host" ]; then
+							san_list+=("$sl");
+						fi;
+					done;
+					san=$(IFS=, ; echo "${san_list[*]}")
+					# san_read=0;
+				fi;
+			done <<< $(echo "$output" | openssl x509 -noout -startdate -enddate -serial -fingerprint -issuer -ext subjectAltName -subject);
 			days=$(get_expire_days)
-			result "{\"expire_days\": ${days}, \"valid\": ${valid}, \"return_code\": ${verify_return_code}, \"return_text\": \"${verify_return_text}\"}"
+			result "{\"expire_days\": ${days}, \"valid\": ${valid}, \"notBefore\": \"${not_before}\", \"notAfter\": \"${not_after}\", \"serial\": \"${serial}\", \"fingerprint\": \"${fingerprint}\", \"issuer\": \"${issuer}\", \"subjectAlternativeNames\": \"${san}\", \"wildcard\": ${wildcard}, \"return_code\": ${verify_return_code}, \"return_text\": \"${verify_return_text}\"}";
 			;;
 	esac
 fi
