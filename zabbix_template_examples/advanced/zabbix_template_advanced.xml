@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2023-06-20T01:42:35Z</date>
+    <date>2023-06-20T04:00:15Z</date>
     <groups>
         <group>
             <name>Templates/Applications</name>
@@ -36,7 +36,7 @@
             <discovery_rules>
                 <discovery_rule>
                     <name>HTTPS Certficates</name>
-                    <key>ssl_cert_list</key>
+                    <key>ssl_cert_list[&quot;{$SSL_CERT_LIST_FOLDER}&quot;]</key>
                     <delay>1d</delay>
                     <lifetime>1d</lifetime>
                     <item_prototypes>
@@ -461,7 +461,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>JSON Get [ssl cert info {#IPADDR}]</name>
+                            <name>JSON Get [ssl cert info {#IPADDR},{#SSLDOMAIN}]</name>
                             <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
                             <delay>{$UPDATEINTERVAL}</delay>
                             <history>1d</history>
@@ -488,18 +488,14 @@ C = US, O = Let's Encrypt, CN = R3</description>
                     <description>days until expire for high alert</description>
                 </macro>
                 <macro>
-                    <macro>{$SSLPORT_DEFAULT}</macro>
-                    <value>443</value>
+                    <macro>{$SSL_CERT_LIST_FOLDER}</macro>
+                    <value>/etc/zabbix/scripts/</value>
+                    <description>Location for the ssl_cert_list file</description>
                 </macro>
                 <macro>
                     <macro>{$SSL_CHECK_SCRIPT_PATH}</macro>
                     <value>/usr/local/bin/</value>
                     <description>full path to the check ssl cert script</description>
-                </macro>
-                <macro>
-                    <macro>{$TIMEOUT_DEFAULT}</macro>
-                    <value>10</value>
-                    <description>in seconds</description>
                 </macro>
                 <macro>
                     <macro>{$UPDATEINTERVAL}</macro>

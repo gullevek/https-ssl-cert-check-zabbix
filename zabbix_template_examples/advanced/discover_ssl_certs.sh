@@ -5,8 +5,13 @@
 # Currently only works with apache
 
 # Parameters: read/create
-# Options: for read/create $1: path to ssl_cert_list, default /etc/zabbix/scripts/
-# Options for create $2: ssl port, default 443; $3: timeout, default 10
+# Options: for read/create $2: path to ssl_cert_list, default /etc/zabbix/scripts/
+# Options for create $3: ssl port, default 443
+#                    $4: timeout, default 10
+#                    $5: set ip addr, if not set or 0, set to domain name
+
+# eg:
+# ./discover_ssl_certs.sh create /etc/zabbix/scripts 443 10 127.0.0.1
 
 # Error Codes
 # 10: SSL CERT LIST FOLDER not set or not found
@@ -67,6 +72,7 @@ fi;
 
 SSL_PORT="${3:-443}"
 TIMEOUT="${4:-10}";
+IP_ADDR="${5:-0}";
 
 echo "{ \"data\": [" > "${SSL_CERT_LIST}";
 trigger_ssl_collect=0;
@@ -81,7 +87,14 @@ while read line; do
 		server_name=$(echo "${line}" | cut -d ":" -f 1 | cut -d " " -f 2- | sed -e 's/^[[:space:]]*//');
 		# echo "S: $server_name";
 		echo "{" >> "${SSL_CERT_LIST}";
-		echo "\"{#IPADDR}\": \"${server_name}\"," >> "${SSL_CERT_LIST}";
+		# LOCALHOST is not 0 then set 127.0.0.1 for IP ADDR and force a local connect check
+		# do this if your host is ip locked on web ports (eg behind a WAF) and you want to
+		# check LOCAL SSL settings and not the external ones
+		ip_addr="${server_name}";
+		if [ "${IP_ADDR}" != "0" ]; then
+			ip_addr="${IP_ADDR}";
+		fi;
+		echo "\"{#IPADDR}\": \"${ip_addr}\"," >> "${SSL_CERT_LIST}";
 		echo "\"{#SSLPORT}\": \"${SSL_PORT}\"," >> "${SSL_CERT_LIST}";
 		echo "\"{#SSLDOMAIN}\": \"${server_name}\"," >> "${SSL_CERT_LIST}";
 		echo "\"{#TIMEOUT}\": \"${TIMEOUT}\"," >> "${SSL_CERT_LIST}";
