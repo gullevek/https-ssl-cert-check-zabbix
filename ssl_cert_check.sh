@@ -77,8 +77,8 @@ function result() { echo "$1"; exit 0; }
 
 function get_expire_days() {
 	expire_date=$( echo "$output" \
-	| openssl x509 -noout -dates \
-	| grep '^notAfter' | cut -d'=' -f2 )
+	| openssl x509 -noout -enddate 2>/dev/null \
+	| cut -d'=' -f2 )
 
 	expire_date_epoch=$($datecmd -d "$expire_date" +%s) || error "Failed to get expire date"
 	current_date_epoch=$($datecmd +%s)
@@ -222,9 +222,9 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 			# Signature Algorithm: we must parse the whole x509 to get for it :(
 			signature_algorithm=$(
 				echo "$output" \
-				| openssl x509 -text \
-				| grep -m 1 "Signature Algorithm" \
-				| cut -d ":" -f 2 \
+				| openssl x509 -noout -text 2>/dev/null \
+				| grep -m 1 'Signature Algorithm' \
+				| cut -d ':' -f 2 \
 				| sed -e 's/^[[:space:]]*//'
 			);
 			# flag for alternative names read
@@ -232,26 +232,26 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 			while read line; do
 				# echo "L: $line";
 				if echo $line | grep -q 'subject='; then
-					subject=$(echo $line | cut -d "=" -f 2- | sed -e 's/CN = //');
+					subject=$(echo $line | cut -d '=' -f 2- | sed -e 's/CN = //');
 					san_read=0;
 				elif echo $line | grep -q 'notBefore='; then
-					not_before=$(echo $line | cut -d "=" -f 2);
+					not_before=$(echo $line | cut -d '=' -f 2);
 					san_read=0;
 				elif echo $line | grep -q 'notAfter='; then
-					not_after=$(echo $line | cut -d "=" -f 2);
+					not_after=$(echo $line | cut -d '=' -f 2);
 					san_read=0;
 				elif echo $line | grep -q 'serial='; then
-					serial=$(echo $line | cut -d "=" -f 2);
+					serial=$(echo $line | cut -d '=' -f 2);
 					san_read=0;
 				elif echo $line | grep -q 'Fingerprint='; then
-					fingerprint=$(echo $line | cut -d "=" -f 2);
+					fingerprint=$(echo $line | cut -d '=' -f 2);
 					san_read=0;
 				elif echo $line | grep -q 'issuer='; then
 					# must strip leading and trailing spaces
 					# convert all " into escaped for json
 					issuer=$(
 						echo $line \
-						| cut -d "=" -f 2- \
+						| cut -d '=' -f 2- \
 						| sed -e 's/^[[:space:]]*//' \
 						| sed -e 's/"/\\"/g'
 					);
@@ -283,7 +283,7 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 				fi;
 			done <<< $(
 				echo "$output" \
-				| openssl x509 -noout -startdate -enddate -serial -fingerprint -issuer -ext subjectAltName -subject
+				| openssl x509 -noout -startdate -enddate -serial -fingerprint -issuer -ext subjectAltName -subject 2>/dev/null
 			);
 			# if we got a domain that is not host check if in subject or alernate string
 			# so we can check that the domain we want to chck via file only actually matches
