@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2023-06-20T04:00:15Z</date>
+    <date>2023-06-20T09:41:13Z</date>
     <groups>
         <group>
             <name>Templates/Applications</name>
@@ -58,7 +58,7 @@
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -110,7 +110,7 @@ and&#13;
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -140,7 +140,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -171,7 +171,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -202,7 +202,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -232,7 +232,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -263,7 +263,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -291,7 +291,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -319,7 +319,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -347,7 +347,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -375,7 +375,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <preprocessing>
@@ -405,7 +405,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <valuemap>
@@ -444,7 +444,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </applications>
                             <application_prototypes>
                                 <application_prototype>
-                                    <name>SSL {#IPADDR}</name>
+                                    <name>SSL {#SSLDOMAIN}</name>
                                 </application_prototype>
                             </application_prototypes>
                             <valuemap>
