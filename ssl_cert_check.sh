@@ -166,26 +166,45 @@ for opt in "${split_options[@]}"; do
 done
 
 # Get certificate
-# shellcheck disable=SC2086
-output=$( echo \
-| timeout "$check_timeout" openssl s_client $starttls $starttls_proto -servername "$domain" -verify_hostname "$domain" -connect "$host":"$port" $tls_version $s_client_options 2>/dev/null )
 
-# Sometimes s_client may return non-zero exit code even if it got the certificate.
-# See https://github.com/selivan/https-ssl-cert-check-zabbix/issues/44
-# So instead we check that output looks valid.
-if ! echo "$output" | grep -q -E '^ *Verify return code:'; then
-	error "Failed to get certificate"
-fi
+# if host is a file name, check from this file instead of connecting to the host
+if [ -f "$host" ]; then
+	output=$(cat "$host");
+	# do quick check if this is even valid
+	validate=$(echo "$output" | openssl x509 -noout 2>/dev/null);
+	if echo "$validate" | grep -q "Could not read certificate from <stdin>"; then
+		error "Failed to parse certificate file";
+	fi;
+else
+	# shellcheck disable=SC2086
+	output=$( echo \
+	| timeout "$check_timeout" openssl s_client $starttls $starttls_proto -servername "$domain" -verify_hostname "$domain" -connect "$host":"$port" $tls_version $s_client_options 2>/dev/null )
+
+	# Sometimes s_client may return non-zero exit code even if it got the certificate.
+	# See https://github.com/selivan/https-ssl-cert-check-zabbix/issues/44
+	# So instead we check that output looks valid.
+	if ! echo "$output" | grep -q -E '^ *Verify return code:'; then
+		error "Failed to get certificate"
+	fi
+fi;
 
 # Run checks
 if [ "$check_type" = "expire" ]; then
 	result $(get_expire_days)
 elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
-	# Note: new openssl versions can print multiple return codes for post-handshake session tickets, so we need to get only the first one
-	verify_return_code=$( echo "$output" | grep -E '^ *Verify return code:' | sed -n 1p | sed 's/^ *//' | tr -s ' ' | cut -d' ' -f4 )
-	verify_return_text=$( echo "$output" | grep -E '^ *Verify return code:' | sed -n 1p | sed 's/^ *//' | tr -s ' ' | grep -Eo "\(.*\)" | sed 's/(//g; s/)//g' )
-	# Check if the return code is in the valid code list
-	if [[ "${openssl_valid_codes[*]}" =~ "${verify_return_code}" ]]; then valid=1; else valid=0; fi
+
+	if [ ! -f "$host" ]; then
+		# Note: new openssl versions can print multiple return codes for post-handshake session tickets, so we need to get only the first one
+		verify_return_code=$( echo "$output" | grep -E '^ *Verify return code:' | sed -n 1p | sed 's/^ *//' | tr -s ' ' | cut -d' ' -f4 )
+		verify_return_text=$( echo "$output" | grep -E '^ *Verify return code:' | sed -n 1p | sed 's/^ *//' | tr -s ' ' | grep -Eo "\(.*\)" | sed 's/(//g; s/)//g' )
+		# Check if the return code is in the valid code list
+		if [[ "${openssl_valid_codes[*]}" =~ "${verify_return_code}" ]]; then valid=1; else valid=0; fi
+	else
+		# if we got a domain that is not host check if in subject or alernate string
+		verify_return_code=-1;
+		verify_return_text="not checked";
+		valid=-1;
+	fi;
 
 	case "$check_type" in
 		"valid")
@@ -193,6 +212,7 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 			;;
 		"json")
 			# add more detailed CA info
+			subject="";
 			not_before="";
 			not_after="";
 			serial="";
@@ -200,10 +220,21 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 			issuer="";
 			san="";
 			wildcard=0;
+			# Signature Algorithm: we must parse the whole x509 to get for it :(
+			signature_algorithm=$(
+				echo "$output" \
+				| openssl x509 -text \
+				| grep -m 1 "Signature Algorithm" \
+				| cut -d ":" -f 2 \
+				| sed -e 's/^[[:space:]]*//'
+			);
+			# flag for alternative names read
 			san_read=0;
 			while read line; do
 				# echo "L: $line";
-				if echo $line | grep -q 'notBefore='; then
+				if echo $line | grep -q 'subject='; then
+					subject=$(echo $line | cut -d "=" -f 2- | sed -e 's/CN = //');
+				elif echo $line | grep -q 'notBefore='; then
 					not_before=$(echo $line | cut -d "=" -f 2);
 					san_read=0;
 				elif echo $line | grep -q 'notAfter='; then
@@ -218,7 +249,12 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 				elif echo $line | grep -q 'issuer='; then
 					# must strip leading and trailing spaces
 					# convert all " into escaped for json
-					issuer=$(echo $line | cut -d "=" -f 2- | sed -e 's/^[[:space:]]*//' | sed -e 's/"/\\"/g');
+					issuer=$(
+						echo $line \
+						| cut -d "=" -f 2- \
+						| sed -e 's/^[[:space:]]*//' \
+						| sed -e 's/"/\\"/g'
+					);
 					san_read=0;
 				elif echo $line | grep -q 'X509v3 Subject Alternative Name:'; then
 					# trigger that next read is alt names until end or other is triggered
@@ -232,7 +268,11 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 				elif [ $san_read -eq 1 ]; then
 					# note if this as an @name group, this will not work
 					san_list=();
-					for sl in $(echo $line | sed -e 's/^[[:space:]]*//' | sed -e 's/DNS://g'); do
+					for sl in $(
+						echo $line \
+						| sed -e 's/^[[:space:]]*//' \
+						| sed -e 's/DNS://g'
+					); do
 						sl=$(echo $sl | sed -e 's/,//');
 						if [ "$sl" != "$host" ]; then
 							san_list+=("$sl");
@@ -241,9 +281,12 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 					san=$(IFS=, ; echo "${san_list[*]}")
 					# san_read=0;
 				fi;
-			done <<< $(echo "$output" | openssl x509 -noout -startdate -enddate -serial -fingerprint -issuer -ext subjectAltName -subject);
+			done <<< $(
+				echo "$output" \
+				| openssl x509 -noout -startdate -enddate -serial -fingerprint -issuer -ext subjectAltName -subject
+			);
 			days=$(get_expire_days)
-			result "{\"expire_days\": ${days}, \"valid\": ${valid}, \"notBefore\": \"${not_before}\", \"notAfter\": \"${not_after}\", \"serial\": \"${serial}\", \"fingerprint\": \"${fingerprint}\", \"issuer\": \"${issuer}\", \"subjectAlternativeNames\": \"${san}\", \"wildcard\": ${wildcard}, \"return_code\": ${verify_return_code}, \"return_text\": \"${verify_return_text}\"}";
+			result "{\"subject\": \"${subject}\", \"expire_days\": ${days}, \"valid\": ${valid}, \"notBefore\": \"${not_before}\", \"notAfter\": \"${not_after}\", \"serial\": \"${serial}\", \"fingerprint\": \"${fingerprint}\", \"signatureAlgorithm\": \"${signature_algorithm}\", \"issuer\": \"${issuer}\", \"subjectAlternativeNames\": \"${san}\", \"wildcard\": ${wildcard}, \"return_code\": ${verify_return_code}, \"return_text\": \"${verify_return_text}\"}";
 			;;
 	esac
 fi

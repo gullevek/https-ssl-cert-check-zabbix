@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
-    <version>4.4</version>
-    <date>2021-05-21T15:10:27Z</date>
+    <version>5.0</version>
+    <date>2023-06-20T01:42:35Z</date>
     <groups>
         <group>
             <name>Templates/Applications</name>
@@ -21,10 +21,16 @@
                     <name>Certificates</name>
                 </application>
                 <application>
-                    <name>ssl_expire</name>
+                    <name>SSL</name>
                 </application>
                 <application>
-                    <name>ssl_valid</name>
+                    <name>SSL Expire</name>
+                </application>
+                <application>
+                    <name>SSL Valid</name>
+                </application>
+                <application>
+                    <name>Zabbix raw items</name>
                 </application>
             </applications>
             <discovery_rules>
@@ -35,31 +41,503 @@
                     <lifetime>1d</lifetime>
                     <item_prototypes>
                         <item_prototype>
-                            <name>SSL cert expiration on [{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</name>
-                            <key>ssl_cert_check_expire[{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
-                            <delay>12h</delay>
-                            <units>Days</units>
+                            <name>SSL expires [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.expire_days[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <units>d</units>
                             <applications>
                                 <application>
-                                    <name>ssl_expire</name>
+                                    <name>SSL</name>
+                                </application>
+                                <application>
+                                    <name>SSL Expire</name>
                                 </application>
                             </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.expire_days</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
                             <trigger_prototypes>
                                 <trigger_prototype>
-                                    <expression>{last(#3)}&lt;15</expression>
-                                    <name>HTTPS Certificate for {#IPADDR}:{#SSLPORT} expires in 15 days !</name>
-                                    <priority>DISASTER</priority>
+                                    <expression>{last(#3,3)}&lt;{$EXPIRESWITHIN_CRITICAL}&#13;
+and&#13;
+{last(#3,3)}&gt;=0</expression>
+                                    <name>HTTPS Certificate for {#IPADDR}:{#SSLPORT} expires in {ITEM.VALUE} days !</name>
+                                    <priority>HIGH</priority>
                                 </trigger_prototype>
                                 <trigger_prototype>
-                                    <expression>{last(#3)}&lt;30</expression>
-                                    <name>HTTPS Certificate for {#IPADDR}:{#SSLPORT} expires in 30 days !</name>
-                                    <priority>AVERAGE</priority>
+                                    <expression>{last(#3,3)}&lt;{$EXPIRESWITHIN}&#13;
+and&#13;
+{last(#3,3)}&gt;={$EXPIRESWITHIN_CRITICAL}</expression>
+                                    <name>HTTPS Certificate for {#IPADDR}:{#SSLPORT} expires in {ITEM.VALUE} days !</name>
+                                    <priority>WARNING</priority>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <expression>{last(#3,3)}&lt;0</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>{last(#3,3)}&gt;={$EXPIRESWITHIN}</recovery_expression>
+                                    <name>HTTPS Certificate for {#IPADDR}:{#SSLPORT} has expired since {ITEM.VALUE} days !</name>
+                                    <priority>DISASTER</priority>
+                                    <description>If this happens the certificate has expired and must be renewed</description>
                                 </trigger_prototype>
                             </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL fingerprint [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.fingerprint[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.fingerprint</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL issuer [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.issuer[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <description>Issuer info, as eg:&#13;
+C = US, O = Let's Encrypt, CN = R3</description>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.issuer</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL valid not after [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.notAfter[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                                <application>
+                                    <name>SSL Expire</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.notAfter</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL valid not before [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.notBefore[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                                <application>
+                                    <name>SSL Expire</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.notBefore</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL return code [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.return_code[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                                <application>
+                                    <name>SSL Valid</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.return_code</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL return text [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.return_text[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                                <application>
+                                    <name>SSL Valid</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.return_text</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL serial [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.serial[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.serial</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL signature algorithm [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.signatureAlgorithm[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.signatureAlgorithm</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL alternative names [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.subjectAlternativeNames[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.subjectAlternativeNames</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL subject [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.subject[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.subject</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL valid [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.valid[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                                <application>
+                                    <name>SSL Valid</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <valuemap>
+                                <name>SSL valid state</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.valid</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last(#3,5)}=0</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>{last(#3,5)}=1</recovery_expression>
+                                    <name>HTTPS Certificate for {#IPADDR}:{#SSLPORT} is invalid !</name>
+                                    <priority>WARNING</priority>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>SSL wildcard [{#SSLDOMAIN}]</name>
+                            <type>DEPENDENT</type>
+                            <key>ssl_cert_check_json.wildcard[{#IPADDR},{#SSLPORT},{#SSLDOMAIN}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <applications>
+                                <application>
+                                    <name>SSL</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SSL {#IPADDR}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <valuemap>
+                                <name>Yes/No</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.wildcard</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>JSON Get [ssl cert info {#IPADDR}]</name>
+                            <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{#IPADDR},{#SSLPORT},{#SSLDOMAIN},{#TIMEOUT}]</key>
+                            <delay>{$UPDATEINTERVAL}</delay>
+                            <history>1d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Zabbix raw items</name>
+                                </application>
+                            </applications>
                         </item_prototype>
                     </item_prototypes>
                 </discovery_rule>
             </discovery_rules>
+            <macros>
+                <macro>
+                    <macro>{$EXPIRESWITHIN}</macro>
+                    <value>30</value>
+                    <description>days until expire for warning</description>
+                </macro>
+                <macro>
+                    <macro>{$EXPIRESWITHIN_CRITICAL}</macro>
+                    <value>7</value>
+                    <description>days until expire for high alert</description>
+                </macro>
+                <macro>
+                    <macro>{$SSLPORT_DEFAULT}</macro>
+                    <value>443</value>
+                </macro>
+                <macro>
+                    <macro>{$SSL_CHECK_SCRIPT_PATH}</macro>
+                    <value>/usr/local/bin/</value>
+                    <description>full path to the check ssl cert script</description>
+                </macro>
+                <macro>
+                    <macro>{$TIMEOUT_DEFAULT}</macro>
+                    <value>10</value>
+                    <description>in seconds</description>
+                </macro>
+                <macro>
+                    <macro>{$UPDATEINTERVAL}</macro>
+                    <value>12h</value>
+                </macro>
+            </macros>
         </template>
     </templates>
+    <value_maps>
+        <value_map>
+            <name>SSL valid state</name>
+            <mappings>
+                <mapping>
+                    <value>-1</value>
+                    <newvalue>Not checked</newvalue>
+                </mapping>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>Invalid</newvalue>
+                </mapping>
+                <mapping>
+                    <value>1</value>
+                    <newvalue>Valid</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+        <value_map>
+            <name>Yes/No</name>
+            <mappings>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>No</newvalue>
+                </mapping>
+                <mapping>
+                    <value>1</value>
+                    <newvalue>Yes</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+    </value_maps>
 </zabbix_export>
