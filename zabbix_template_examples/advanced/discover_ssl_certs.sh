@@ -8,6 +8,14 @@
 # Options: for read/create $1: path to ssl_cert_list, default /etc/zabbix/scripts/
 # Options for create $2: ssl port, default 443; $3: timeout, default 10
 
+# Error Codes
+# 10: SSL CERT LIST FOLDER not set or not found
+# 20: ssl_cert_list does not exist
+# 30: non valid base option (read/create)
+# 40: create must run as root
+# 41: apachectl not found
+# 42: mod_info not installed
+
 error_code=-65535
 
 function error() {
