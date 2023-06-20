@@ -233,6 +233,7 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 				# echo "L: $line";
 				if echo $line | grep -q 'subject='; then
 					subject=$(echo $line | cut -d "=" -f 2- | sed -e 's/CN = //');
+					san_read=0;
 				elif echo $line | grep -q 'notBefore='; then
 					not_before=$(echo $line | cut -d "=" -f 2);
 					san_read=0;
@@ -273,7 +274,7 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 						| sed -e 's/DNS://g'
 					); do
 						sl=$(echo $sl | sed -e 's/,//');
-						if [ "$sl" != "$host" ]; then
+						if [ "$sl" != "$host" ] && [ "$sl" != "$subject" ] && [ "$sl" != "$domain" ]; then
 							san_list+=("$sl");
 						fi;
 					done;
