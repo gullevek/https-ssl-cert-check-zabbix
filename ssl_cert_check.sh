@@ -287,14 +287,14 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 			# if we got a domain that is not host check if in subject or alernate string
 			# so we can check that the domain we want to chck via file only actually matches
 			if [ $valid -eq -1 ] && [ "${domain}" != "${host}" ]; then
-				if echo $domain | grep -q "${subject}"; then
+				if [ "${subject}" = "${domain}" ]; then
 					valid=1;
 				elif echo $domain | grep -q "${san}"; then
 					valid=1;
 				else
 					valid=0;
 					verify_return_code=999;
-					verify_return_text="given host name not found in subject or alternative names";
+					verify_return_text="given domain name not found in subject or alternative names";
 				fi;
 			fi;
 			days=$(get_expire_days)
