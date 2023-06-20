@@ -4,6 +4,10 @@
 
 # Currently only works with apache
 
+# Parameters: read/create
+# Options: for read/create $1: path to ssl_cert_list, default /etc/zabbix/scripts/
+# Options for create $2: ssl port, default 443; $3: timeout, default 10
+
 error_code=-65535
 
 function error() {
