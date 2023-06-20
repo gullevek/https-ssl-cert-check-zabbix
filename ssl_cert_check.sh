@@ -200,7 +200,6 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 		# Check if the return code is in the valid code list
 		if [[ "${openssl_valid_codes[*]}" =~ "${verify_return_code}" ]]; then valid=1; else valid=0; fi
 	else
-		# if we got a domain that is not host check if in subject or alernate string
 		verify_return_code=-1;
 		verify_return_text="not checked";
 		valid=-1;
@@ -285,6 +284,19 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 				echo "$output" \
 				| openssl x509 -noout -startdate -enddate -serial -fingerprint -issuer -ext subjectAltName -subject
 			);
+			# if we got a domain that is not host check if in subject or alernate string
+			# so we can check that the domain we want to chck via file only actually matches
+			if [ $valid -eq -1 ] && [ "${domain}" != "${host}" ]; then
+				if echo $domain | grep -q "${subject}"; then
+					valid=1;
+				elif echo $domain | grep -q "${san}"; then
+					valid=1;
+				else
+					valid=0;
+					verify_return_code=999;
+					verify_return_text="given host name not found in subject or alternative names";
+				fi;
+			fi;
 			days=$(get_expire_days)
 			result "{\"subject\": \"${subject}\", \"expire_days\": ${days}, \"valid\": ${valid}, \"notBefore\": \"${not_before}\", \"notAfter\": \"${not_after}\", \"serial\": \"${serial}\", \"fingerprint\": \"${fingerprint}\", \"signatureAlgorithm\": \"${signature_algorithm}\", \"issuer\": \"${issuer}\", \"subjectAlternativeNames\": \"${san}\", \"wildcard\": ${wildcard}, \"return_code\": ${verify_return_code}, \"return_text\": \"${verify_return_text}\"}";
 			;;
