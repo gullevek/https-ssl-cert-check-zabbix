@@ -110,7 +110,7 @@ while read line; do
 		echo "\"{#CERTFILE}\": \"${server_cert_file}\"" >> "${SSL_CERT_LIST}";
 		echo "}" >> "${SSL_CERT_LIST}";
 	fi;
-done <<< "${apache_data}";:w
+done <<< "${apache_data}";
 
 echo "]}" >> "${SSL_CERT_LIST}";
 cat "${SSL_CERT_LIST}";
