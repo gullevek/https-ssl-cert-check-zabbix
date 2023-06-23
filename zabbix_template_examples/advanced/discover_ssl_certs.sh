@@ -74,6 +74,11 @@ SSL_PORT="${3:-443}"
 TIMEOUT="${4:-10}";
 IP_ADDR="${5:-0}";
 
+# I have to pre-read that, some AWS v2 linux do not do line breaks in <<< $( ... ) runs
+apache_data=$(
+	$apachectl -DDUMP_CONFIG \
+	| grep -vE "^[ ]*#[ ]*[0-9]+:$"
+);
 echo "{ \"data\": [" > "${SSL_CERT_LIST}";
 trigger_ssl_collect=0;
 element_written=0;
@@ -105,11 +110,8 @@ while read line; do
 		echo "\"{#CERTFILE}\": \"${server_cert_file}\"" >> "${SSL_CERT_LIST}";
 		echo "}" >> "${SSL_CERT_LIST}";
 	fi;
+done <<< "${apache_data}";:w
 
-done <<< $(
-	$apachectl -DDUMP_CONFIG \
-	| grep -vE "^[ ]*#[ ]*[0-9]+:$"
-);
 echo "]}" >> "${SSL_CERT_LIST}";
 cat "${SSL_CERT_LIST}";
 exit 0;
