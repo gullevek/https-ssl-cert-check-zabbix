@@ -87,6 +87,21 @@ function get_expire_days() {
 	echo $days_left
 }
 
+function get_san() {
+	output="$1";
+	host="$2";
+	domain="$3";
+	subject="$4";
+	san_list=();
+	for sl in $output; do
+		sl=$(echo $sl | sed -e 's/,//');
+		if [ "$sl" != "$host" ] && [ "$sl" != "$subject" ] && [ "$sl" != "$domain" ]; then
+			san_list+=("$sl");
+		fi;
+	done;
+	echo $(IFS=, ; echo "${san_list[*]}");
+}
+
 # date command
 datecmd="date";
 # Arguments
@@ -205,6 +220,15 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 		valid=-1;
 	fi;
 
+	openssl_new=1;
+	san_opt=' -ext subjectAltName ';
+	# based on the openssl version we can or cannot add "-ext subjectAltName"
+	#  | openssl x509 -noout -text | grep -i dns
+	if openssl version | grep -q '1.0'; then
+		openssl_new=0;
+		san_opt='';
+	fi;
+
 	case "$check_type" in
 		"valid")
 			result $valid
@@ -227,12 +251,24 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 				| cut -d ':' -f 2 \
 				| sed -e 's/^[[:space:]]*//'
 			);
+			# must pre read for some linuxes who don't understand <<< $( ... )
+			openssl_x509=$(
+				echo "$output" \
+				| openssl x509 -noout -startdate -enddate -serial -fingerprint -issuer $san_opt -subject 2>/dev/null
+			);
 			# flag for alternative names read
 			san_read=0;
 			while read line; do
 				# echo "L: $line";
 				if echo $line | grep -q 'subject='; then
-					subject=$(echo $line | cut -d '=' -f 2- | sed -e 's/CN = //');
+					# strip leading CN
+					# strpi any leading slash too
+					subject=$(
+						echo $line \
+						| cut -d '=' -f 2- \
+						| sed -e 's/CN = //' \
+						| sed -e 's/ \///'
+					);
 					san_read=0;
 				elif echo $line | grep -q 'notBefore='; then
 					not_before=$(echo $line | cut -d '=' -f 2);
@@ -249,11 +285,15 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 				elif echo $line | grep -q 'issuer='; then
 					# must strip leading and trailing spaces
 					# convert all " into escaped for json
+					# strip the leading \ for old SSL
+					# note that with old 1.0 openssl the issuer string is /
+					# separated and there are no spaced before and after the =
 					issuer=$(
 						echo $line \
 						| cut -d '=' -f 2- \
 						| sed -e 's/^[[:space:]]*//' \
-						| sed -e 's/"/\\"/g'
+						| sed -e 's/"/\\"/g' \
+						| sed -e 's/\/C=/C=/'
 					);
 					san_read=0;
 				elif echo $line | grep -q 'X509v3 Subject Alternative Name:'; then
@@ -267,24 +307,23 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 					san_read=0;
 				elif [ $san_read -eq 1 ]; then
 					# note if this as an @name group, this will not work
-					san_list=();
-					for sl in $(
+					san=$(get_san $(
 						echo $line \
 						| sed -e 's/^[[:space:]]*//' \
 						| sed -e 's/DNS://g'
-					); do
-						sl=$(echo $sl | sed -e 's/,//');
-						if [ "$sl" != "$host" ] && [ "$sl" != "$subject" ] && [ "$sl" != "$domain" ]; then
-							san_list+=("$sl");
-						fi;
-					done;
-					san=$(IFS=, ; echo "${san_list[*]}")
-					# san_read=0;
+					) "$host" "$domain" "$subject");
 				fi;
-			done <<< $(
-				echo "$output" \
-				| openssl x509 -noout -startdate -enddate -serial -fingerprint -issuer -ext subjectAltName -subject 2>/dev/null
-			);
+			done <<< "${openssl_x509}";
+			# for old we need second run to get the alternative names
+			if [ $openssl_new -eq 0 ]; then
+				san=$(get_san $(
+					echo "$output" \
+					| openssl x509 -noout -text \
+					| grep -C3 -i dns \
+					| sed -e 's/^[[:space:]]*//' \
+					| sed -e 's/DNS://g'
+				) "$host" "$domain" "$subject");
+			fi;
 			# if we got a domain that is not host check if in subject or alernate string
 			# so we can check that the domain we want to chck via file only actually matches
 			if [ $valid -eq -1 ] && [ "${domain}" != "${host}" ]; then
