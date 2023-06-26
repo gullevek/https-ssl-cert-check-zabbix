@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2023-06-20T09:41:13Z</date>
+    <date>2023-06-26T00:10:21Z</date>
     <groups>
         <group>
             <name>Templates/Applications</name>
@@ -47,6 +47,7 @@
                             <delay>0</delay>
                             <history>7d</history>
                             <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
                             <units>d</units>
                             <applications>
                                 <application>
@@ -72,24 +73,24 @@
                             </master_item>
                             <trigger_prototypes>
                                 <trigger_prototype>
-                                    <expression>{last(#3,3)}&lt;{$EXPIRESWITHIN_CRITICAL}&#13;
+                                    <expression>{last()}&lt;{$EXPIRESWITHIN_CRITICAL}&#13;
 and&#13;
-{last(#3,3)}&gt;=0</expression>
-                                    <name>HTTPS Certificate for {#IPADDR}:{#SSLPORT} expires in {ITEM.VALUE} days !</name>
+{last()}&gt;=0</expression>
+                                    <name>HTTPS Certificate for {#SSLDOMAIN}:{#SSLPORT} expires in {ITEM.VALUE} days !</name>
                                     <priority>HIGH</priority>
                                 </trigger_prototype>
                                 <trigger_prototype>
-                                    <expression>{last(#3,3)}&lt;{$EXPIRESWITHIN}&#13;
+                                    <expression>{last()}&lt;{$EXPIRESWITHIN}&#13;
 and&#13;
-{last(#3,3)}&gt;={$EXPIRESWITHIN_CRITICAL}</expression>
-                                    <name>HTTPS Certificate for {#IPADDR}:{#SSLPORT} expires in {ITEM.VALUE} days !</name>
+{last()}&gt;={$EXPIRESWITHIN_CRITICAL}</expression>
+                                    <name>HTTPS Certificate for {#SSLDOMAIN}:{#SSLPORT} expires in {ITEM.VALUE} days !</name>
                                     <priority>WARNING</priority>
                                 </trigger_prototype>
                                 <trigger_prototype>
-                                    <expression>{last(#3,3)}&lt;0</expression>
+                                    <expression>{last()}&lt;0</expression>
                                     <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
-                                    <recovery_expression>{last(#3,3)}&gt;={$EXPIRESWITHIN}</recovery_expression>
-                                    <name>HTTPS Certificate for {#IPADDR}:{#SSLPORT} has expired since {ITEM.VALUE} days !</name>
+                                    <recovery_expression>{last()}&gt;={$EXPIRESWITHIN}</recovery_expression>
+                                    <name>HTTPS Certificate for {#SSLDOMAIN}:{#SSLPORT} has expired since {ITEM.VALUE} days !</name>
                                     <priority>DISASTER</priority>
                                     <description>If this happens the certificate has expired and must be renewed</description>
                                 </trigger_prototype>
@@ -422,10 +423,10 @@ C = US, O = Let's Encrypt, CN = R3</description>
                             </master_item>
                             <trigger_prototypes>
                                 <trigger_prototype>
-                                    <expression>{last(#3,5)}=0</expression>
+                                    <expression>{last()}=0</expression>
                                     <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
-                                    <recovery_expression>{last(#3,5)}=1</recovery_expression>
-                                    <name>HTTPS Certificate for {#IPADDR}:{#SSLPORT} is invalid !</name>
+                                    <recovery_expression>{last()}=1</recovery_expression>
+                                    <name>HTTPS Certificate for {#SSLDOMAIN}:{#SSLPORT} is invalid !</name>
                                     <priority>WARNING</priority>
                                 </trigger_prototype>
                             </trigger_prototypes>

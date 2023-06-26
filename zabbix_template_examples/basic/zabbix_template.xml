@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2023-06-20T01:42:25Z</date>
+    <date>2023-06-26T00:09:29Z</date>
     <groups>
         <group>
             <name>Templates/Applications</name>
@@ -41,6 +41,7 @@
                     <delay>0</delay>
                     <history>7d</history>
                     <trends>30d</trends>
+                    <value_type>FLOAT</value_type>
                     <units>d</units>
                     <applications>
                         <application>
@@ -61,23 +62,23 @@
                     </master_item>
                     <triggers>
                         <trigger>
-                            <expression>{last(#3,3)}&lt;0</expression>
+                            <expression>{last()}&lt;0</expression>
                             <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
-                            <recovery_expression>{last(#3,3)}&gt;={$EXPIRESWITHIN}</recovery_expression>
+                            <recovery_expression>{last()}&gt;={$EXPIRESWITHIN}</recovery_expression>
                             <name>Certificate expired since {ITEM.VALUE} days!</name>
                             <priority>DISASTER</priority>
                         </trigger>
                         <trigger>
-                            <expression>{last(#3,3)}&lt;{$EXPIRESWITHIN_CRITICAL}&#13;
+                            <expression>{last()}&lt;{$EXPIRESWITHIN_CRITICAL}&#13;
 and&#13;
-{last(#3,3)}&gt;=0</expression>
+{last()}&gt;=0</expression>
                             <name>Certificate expires soon, {ITEM.VALUE} days left</name>
                             <priority>HIGH</priority>
                         </trigger>
                         <trigger>
-                            <expression>{last(#3,3)}&lt;{$EXPIRESWITHIN}&#13;
+                            <expression>{last()}&lt;{$EXPIRESWITHIN}&#13;
 and&#13;
-{last(#3,3)}&gt;={$EXPIRESWITHIN_CRITICAL}</expression>
+{last()}&gt;={$EXPIRESWITHIN_CRITICAL}</expression>
                             <name>Certificate expires soon, {ITEM.VALUE} days left</name>
                             <priority>WARNING</priority>
                         </trigger>
@@ -360,9 +361,9 @@ C = US, O = Let's Encrypt, CN = R3</description>
                     </master_item>
                     <triggers>
                         <trigger>
-                            <expression>{last(#3,5)}=0</expression>
+                            <expression>{last()}=0</expression>
                             <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
-                            <recovery_expression>{last(#3,5)}=1</recovery_expression>
+                            <recovery_expression>{last()}=1</recovery_expression>
                             <name>Certificate validation failed</name>
                             <priority>WARNING</priority>
                         </trigger>
