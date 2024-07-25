@@ -65,7 +65,7 @@ EOF
 }
 
 function error() {
-	if [ $check_type == "json" ]; then
+	if [ "$check_type" == "json" ]; then
 		echo "{\"error_code\": $error_code, \"error_message\": \"$*\"}"
 		exit 0
 	else
@@ -94,12 +94,12 @@ function get_san() {
 	subject="$4";
 	san_list=();
 	for sl in $output; do
-		sl=$(echo $sl | sed -e 's/,//');
+		sl="${sl//,/}"
 		if [ "$sl" != "$host" ] && [ "$sl" != "$subject" ] && [ "$sl" != "$domain" ]; then
 			san_list+=("$sl");
 		fi;
 	done;
-	echo $(IFS=, ; echo "${san_list[*]}");
+	echo "$(IFS=, ; echo "${san_list[*]}")";
 }
 
 # date command
@@ -111,7 +111,7 @@ port="${3:-443}"
 domain="${4:-$host}"
 check_timeout="${5:-$default_check_timeout}"
 options="$6"
-s_client_options="${@: 7}"
+s_client_options="${*: 7}"
 
 starttls=""
 starttls_proto=""
@@ -205,7 +205,7 @@ fi;
 
 # Run checks
 if [ "$check_type" = "expire" ]; then
-	result $(get_expire_days)
+	result "$(get_expire_days)"
 elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 
 	if [ ! -f "$host" ]; then
@@ -213,7 +213,7 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 		verify_return_code=$( echo "$output" | grep -E '^ *Verify return code:' | sed -n 1p | sed 's/^ *//' | tr -s ' ' | cut -d' ' -f4 )
 		verify_return_text=$( echo "$output" | grep -E '^ *Verify return code:' | sed -n 1p | sed 's/^ *//' | tr -s ' ' | grep -Eo "\(.*\)" | sed 's/(//g; s/)//g' )
 		# Check if the return code is in the valid code list
-		if [[ "${openssl_valid_codes[*]}" =~ "${verify_return_code}" ]]; then valid=1; else valid=0; fi
+		if [[ "${openssl_valid_codes[*]}" =~ ${verify_return_code} ]]; then valid=1; else valid=0; fi
 	else
 		verify_return_code=-1;
 		verify_return_text="not checked";
@@ -252,84 +252,85 @@ elif [[ "$check_type" = "valid" || "$check_type" = "json" ]]; then
 				| sed -e 's/^[[:space:]]*//'
 			);
 			# must pre read for some linuxes who don't understand <<< $( ... )
+			# shellcheck disable=SC2086
 			openssl_x509=$(
 				echo "$output" \
 				| openssl x509 -noout -startdate -enddate -serial -fingerprint -issuer $san_opt -subject 2>/dev/null
 			);
 			# flag for alternative names read
 			san_read=0;
-			while read line; do
+			while read -r line; do
 				# echo "L: $line";
-				if echo $line | grep -q 'subject='; then
+				if echo "$line" | grep -q 'subject='; then
 					# strip leading CN
 					# strpi any leading slash too
 					subject=$(
-						echo $line \
+						echo "$line" \
 						| cut -d '=' -f 2- \
 						| sed -e 's/CN = //' \
 						| sed -e 's/ \///'
 					);
 					san_read=0;
-				elif echo $line | grep -q 'notBefore='; then
-					not_before=$(echo $line | cut -d '=' -f 2);
+				elif echo "$line" | grep -q 'notBefore='; then
+					not_before=$(echo "$line" | cut -d '=' -f 2);
 					san_read=0;
-				elif echo $line | grep -q 'notAfter='; then
-					not_after=$(echo $line | cut -d '=' -f 2);
+				elif echo "$line" | grep -q 'notAfter='; then
+					not_after=$(echo "$line" | cut -d '=' -f 2);
 					san_read=0;
-				elif echo $line | grep -q 'serial='; then
-					serial=$(echo $line | cut -d '=' -f 2);
+				elif echo "$line" | grep -q 'serial='; then
+					serial=$(echo "$line" | cut -d '=' -f 2);
 					san_read=0;
-				elif echo $line | grep -q 'Fingerprint='; then
-					fingerprint=$(echo $line | cut -d '=' -f 2);
+				elif echo "$line" | grep -q 'Fingerprint='; then
+					fingerprint=$(echo "$line" | cut -d '=' -f 2);
 					san_read=0;
-				elif echo $line | grep -q 'issuer='; then
+				elif echo "$line" | grep -q 'issuer='; then
 					# must strip leading and trailing spaces
 					# convert all " into escaped for json
 					# strip the leading \ for old SSL
 					# note that with old 1.0 openssl the issuer string is /
 					# separated and there are no spaced before and after the =
 					issuer=$(
-						echo $line \
+						echo "$line" \
 						| cut -d '=' -f 2- \
 						| sed -e 's/^[[:space:]]*//' \
 						| sed -e 's/"/\\"/g' \
 						| sed -e 's/\/C=/C=/'
 					);
 					san_read=0;
-				elif echo $line | grep -q 'X509v3 Subject Alternative Name:'; then
+				elif echo "$line" | grep -q 'X509v3 Subject Alternative Name:'; then
 					# trigger that next read is alt names until end or other is triggered
 					san_read=1;
-				elif echo $line | grep -q 'subject='; then
+				elif echo "$line" | grep -q 'subject='; then
 					# do we have * inside
-					if echo $line | grep -q '*'; then
+					if echo "$line" | grep -q "\*"; then
 						wildcard=1;
 					fi;
 					san_read=0;
 				elif [ $san_read -eq 1 ]; then
 					# note if this as an @name group, this will not work
-					san=$(get_san $(
-						echo $line \
+					san="$(get_san "$(
+						echo "$line" \
 						| sed -e 's/^[[:space:]]*//' \
 						| sed -e 's/DNS://g'
-					) "$host" "$domain" "$subject");
+					)" "$host" "$domain" "$subject")";
 				fi;
 			done <<< "${openssl_x509}";
 			# for old we need second run to get the alternative names
 			if [ $openssl_new -eq 0 ]; then
-				san=$(get_san $(
+				san="$(get_san "$(
 					echo "$output" \
 					| openssl x509 -noout -text \
 					| grep -C3 -i dns \
 					| sed -e 's/^[[:space:]]*//' \
 					| sed -e 's/DNS://g'
-				) "$host" "$domain" "$subject");
+				)" "$host" "$domain" "$subject")";
 			fi;
 			# if we got a domain that is not host check if in subject or alernate string
 			# so we can check that the domain we want to chck via file only actually matches
 			if [ $valid -eq -1 ] && [ "${domain}" != "${host}" ]; then
 				if [ "${subject}" = "${domain}" ]; then
 					valid=1;
-				elif echo $domain | grep -q "${san}"; then
+				elif echo "$domain" | grep -q "${san}"; then
 					valid=1;
 				else
 					valid=0;
