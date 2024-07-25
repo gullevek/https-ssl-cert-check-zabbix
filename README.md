@@ -161,7 +161,9 @@ user@host:~$ ./ssl_cert_check.sh json self-signed.badssl.com 443 self-signed.bad
 
 ## Zabbix integration
 
-Example of Zabbix [user parameters](https://www.zabbix.com/documentation/current/manual/config/items/userparameters): `userparameters_ssl_cert_check.conf` in `zabbix_integration_examples` directory.
+Example of Zabbix [user parameters](https://www.zabbix.com/documentation/current/manual/config/items/userparameters) is in `userparameters_ssl_cert_check.conf`.
+
+You can write your own template or use one of two example templates in `zabbix_template_examples` directory.
 
 `basic` - basic template and userparameter for monitoring of one SSL cert per host
 

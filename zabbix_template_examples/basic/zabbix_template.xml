@@ -1,35 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
-<<<<<<< HEAD:zabbix_template_examples/basic/zabbix_template.xml
     <version>5.0</version>
     <date>2023-06-26T00:09:29Z</date>
     <groups>
         <group>
-||||||| 9f647c8:zabbix_template_examples/basic/zabbix_template.xml
-    <version>4.4</version>
-    <date>2021-04-18T15:28:09Z</date>
-    <groups>
-        <group>
-=======
-    <version>6.4</version>
-    <template_groups>
-        <template_group>
-            <uuid>a571c0d144b14fd4a87a9d9b2aa9fcd6</uuid>
->>>>>>> 7ccf67943b8df361f743c242bd6e9b2f42279caf:zabbix_integration_examples/template_ssl_basic.xml
             <name>Templates/Applications</name>
-        </template_group>
-    </template_groups>
+        </group>
+    </groups>
     <templates>
         <template>
-            <uuid>faf73082ee7c476e971ea8e50c87b8dc</uuid>
-            <template>Template SSL Certificate Monitoring</template>
-            <name>Template SSL Certificate Monitoring</name>
+            <template>Template Web SSL Certificate Monitor</template>
+            <name>Template Web SSL Certificate Monitor</name>
             <groups>
                 <group>
                     <name>Templates/Applications</name>
                 </group>
             </groups>
-<<<<<<< HEAD:zabbix_template_examples/basic/zabbix_template.xml
             <applications>
                 <application>
                     <name>Certificates</name>
@@ -47,42 +33,16 @@
                     <name>Zabbix raw items</name>
                 </application>
             </applications>
-||||||| 9f647c8:zabbix_template_examples/basic/zabbix_template.xml
-            <applications>
-                <application>
-                    <name>Certificates</name>
-                </application>
-                <application>
-                    <name>ssl_expire</name>
-                </application>
-                <application>
-                    <name>ssl_valid</name>
-                </application>
-            </applications>
-=======
->>>>>>> 7ccf67943b8df361f743c242bd6e9b2f42279caf:zabbix_integration_examples/template_ssl_basic.xml
             <items>
                 <item>
-<<<<<<< HEAD:zabbix_template_examples/basic/zabbix_template.xml
                     <name>ssl expires</name>
                     <type>DEPENDENT</type>
                     <key>ssl_cert_check_json.expire_days</key>
                     <delay>0</delay>
-||||||| 9f647c8:zabbix_template_examples/basic/zabbix_template.xml
-                    <name>ssl_cert_check_expire</name>
-                    <key>ssl_cert_check_expire[{$IPADDR},{$SSLPORT},{$SSLDOMAIN},{$TIMEOUT}]</key>
-                    <delay>{$UPDATEINTERVAL}</delay>
-=======
-                    <uuid>c429dd8ab2af48ff8d3ecc800b596892</uuid>
-                    <name>ssl_cert_check_expire</name>
-                    <key>ssl_cert_check_expire[{$IPADDR},{$SSLPORT},{$SSLDOMAIN},{$TIMEOUT}]</key>
-                    <delay>{$UPDATEINTERVAL}</delay>
->>>>>>> 7ccf67943b8df361f743c242bd6e9b2f42279caf:zabbix_integration_examples/template_ssl_basic.xml
                     <history>7d</history>
                     <trends>30d</trends>
                     <value_type>FLOAT</value_type>
                     <units>d</units>
-<<<<<<< HEAD:zabbix_template_examples/basic/zabbix_template.xml
                     <applications>
                         <application>
                             <name>SSL</name>
@@ -100,23 +60,8 @@
                     <master_item>
                         <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{$IPADDR},{$SSLPORT},{$SSLDOMAIN},{$TIMEOUT}]</key>
                     </master_item>
-||||||| 9f647c8:zabbix_template_examples/basic/zabbix_template.xml
-                    <applications>
-                        <application>
-                            <name>ssl_expire</name>
-                        </application>
-                    </applications>
-=======
-                    <tags>
-                        <tag>
-                            <tag>Application</tag>
-                            <value>ssl_expire</value>
-                        </tag>
-                    </tags>
->>>>>>> 7ccf67943b8df361f743c242bd6e9b2f42279caf:zabbix_integration_examples/template_ssl_basic.xml
                     <triggers>
                         <trigger>
-<<<<<<< HEAD:zabbix_template_examples/basic/zabbix_template.xml
                             <expression>{last()}&lt;0</expression>
                             <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
                             <recovery_expression>{last()}&gt;={$EXPIRESWITHIN}</recovery_expression>
@@ -136,37 +81,15 @@ and&#13;
 {last()}&gt;={$EXPIRESWITHIN_CRITICAL}</expression>
                             <name>Certificate expires soon, {ITEM.VALUE} days left</name>
                             <priority>WARNING</priority>
-||||||| 9f647c8:zabbix_template_examples/basic/zabbix_template.xml
-                            <expression>{last(#3,3)}&lt;{$EXPIRESWITHIN}</expression>
-                            <name>Certificate expires soon, {ITEM.VALUE} days left</name>
-                            <priority>WARNING</priority>
-=======
-                            <uuid>d2f958783f6646cbbbe5c7f304f03311</uuid>
-                            <expression>last(/Template SSL Certificate Monitoring/ssl_cert_check_expire[{$IPADDR},{$SSLPORT},{$SSLDOMAIN},{$TIMEOUT}])&lt;{$EXPIRESWITHIN}</expression>
-                            <name>SSL certificate expires soon, {ITEM.VALUE} days left</name>
-                            <priority>AVERAGE</priority>
->>>>>>> 7ccf67943b8df361f743c242bd6e9b2f42279caf:zabbix_integration_examples/template_ssl_basic.xml
                         </trigger>
                     </triggers>
                 </item>
                 <item>
-<<<<<<< HEAD:zabbix_template_examples/basic/zabbix_template.xml
                     <name>ssl fingerprint</name>
                     <type>DEPENDENT</type>
                     <key>ssl_cert_check_json.fingerprint</key>
                     <delay>0</delay>
-||||||| 9f647c8:zabbix_template_examples/basic/zabbix_template.xml
-                    <name>ssl_cert_check_valid</name>
-                    <key>ssl_cert_check_valid[{$IPADDR},{$SSLPORT},{$SSLDOMAIN},{$TIMEOUT}]</key>
-                    <delay>{$UPDATEINTERVAL}</delay>
-=======
-                    <uuid>8de27012be284322b68cf9a19cf65a17</uuid>
-                    <name>ssl_cert_check_valid</name>
-                    <key>ssl_cert_check_valid[{$IPADDR},{$SSLPORT},{$SSLDOMAIN},{$TIMEOUT}]</key>
-                    <delay>{$UPDATEINTERVAL}</delay>
->>>>>>> 7ccf67943b8df361f743c242bd6e9b2f42279caf:zabbix_integration_examples/template_ssl_basic.xml
                     <history>7d</history>
-<<<<<<< HEAD:zabbix_template_examples/basic/zabbix_template.xml
                     <trends>0</trends>
                     <value_type>TEXT</value_type>
                     <applications>
@@ -436,42 +359,13 @@ C = US, O = Let's Encrypt, CN = R3</description>
                     <master_item>
                         <key>ssl_cert_check_json[{$SSL_CHECK_SCRIPT_PATH},{$IPADDR},{$SSLPORT},{$SSLDOMAIN},{$TIMEOUT}]</key>
                     </master_item>
-||||||| 9f647c8:zabbix_template_examples/basic/zabbix_template.xml
-                    <trends>14d</trends>
-                    <applications>
-                        <application>
-                            <name>ssl_valid</name>
-                        </application>
-                    </applications>
-=======
-                    <trends>14d</trends>
-                    <tags>
-                        <tag>
-                            <tag>Application</tag>
-                            <value>ssl_valid</value>
-                        </tag>
-                    </tags>
->>>>>>> 7ccf67943b8df361f743c242bd6e9b2f42279caf:zabbix_integration_examples/template_ssl_basic.xml
                     <triggers>
                         <trigger>
-<<<<<<< HEAD:zabbix_template_examples/basic/zabbix_template.xml
                             <expression>{last()}=0</expression>
                             <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
                             <recovery_expression>{last()}=1</recovery_expression>
                             <name>Certificate validation failed</name>
                             <priority>WARNING</priority>
-||||||| 9f647c8:zabbix_template_examples/basic/zabbix_template.xml
-                            <expression>{last(#3,5)}=0</expression>
-                            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
-                            <recovery_expression>{last(#3,5)}=1</recovery_expression>
-                            <name>Certificate validation failed</name>
-                            <priority>WARNING</priority>
-=======
-                            <uuid>81cd1ee8eda946ebb216e90c1bffbcd1</uuid>
-                            <expression>last(/Template SSL Certificate Monitoring/ssl_cert_check_valid[{$IPADDR},{$SSLPORT},{$SSLDOMAIN},{$TIMEOUT}])&lt;&gt;1</expression>
-                            <name>SSL certificate invalid</name>
-                            <priority>DISASTER</priority>
->>>>>>> 7ccf67943b8df361f743c242bd6e9b2f42279caf:zabbix_integration_examples/template_ssl_basic.xml
                         </trigger>
                     </triggers>
                 </item>
@@ -527,7 +421,7 @@ C = US, O = Let's Encrypt, CN = R3</description>
                 </macro>
                 <macro>
                     <macro>{$IPADDR}</macro>
-                    <value>github.com</value>
+                    <value>140.82.121.4</value>
                     <description>Server IP address</description>
                 </macro>
                 <macro>
@@ -552,13 +446,12 @@ C = US, O = Let's Encrypt, CN = R3</description>
                 </macro>
                 <macro>
                     <macro>{$UPDATEINTERVAL}</macro>
-                    <value>30</value>
+                    <value>12h</value>
                     <description>How often to update certificate information</description>
                 </macro>
             </macros>
         </template>
     </templates>
-<<<<<<< HEAD:zabbix_template_examples/basic/zabbix_template.xml
     <value_maps>
         <value_map>
             <name>SSL valid state</name>
@@ -591,8 +484,4 @@ C = US, O = Let's Encrypt, CN = R3</description>
             </mappings>
         </value_map>
     </value_maps>
-||||||| 9f647c8:zabbix_template_examples/basic/zabbix_template.xml
-</zabbix_export>
-=======
->>>>>>> 7ccf67943b8df361f743c242bd6e9b2f42279caf:zabbix_integration_examples/template_ssl_basic.xml
 </zabbix_export>
