@@ -28,7 +28,7 @@ function error() {
 	exit 0;
 }
 
-BASE_FOLDER=$(dirname $(readlink -f $0))"/";
+# BASE_FOLDER=$(dirname "$(readlink -f "$0")")"/";
 SSL_CERT_LIST_FOLDER="${2-/etc/zabbix/scripts/}";
 if [ -z "${SSL_CERT_LIST_FOLDER}" ] || [ ! -d "${SSL_CERT_LIST_FOLDER}" ]; then
 	error_code=10;
@@ -53,7 +53,7 @@ if [ "$1" != "create" ]; then
 fi;
 
 # must be root to create
-if [ $(id -u) -ne 0 ]; then
+if [ "$(id -u)" -ne 0 ]; then
 	error_code=40;
 	error "Create run must be called as root user";
 fi;
@@ -65,7 +65,8 @@ apachectl="apachectl";
 error_code=41;
 type "$apachectl" >/dev/null || error "Not found in \$PATH: $apachectl";
 # no mod info installed
-if [[ -z $("$apachectl" -L 2>/dev/null | grep mod_info) ]]; then
+# if [[ -z $("$apachectl" -L 2>/dev/null | grep mod_info) ]]; then
+if ! "$apachectl" -L 2>/dev/null | grep mod_info; then
 	error_code=42;
 	error "apache2 mod_info not installed";
 fi;
@@ -82,7 +83,7 @@ apache_data=$(
 echo "{ \"data\": [" > "${SSL_CERT_LIST}";
 trigger_ssl_collect=0;
 element_written=0;
-while read line; do
+while read -r line; do
 	if echo "${line}" | grep -q "<VirtualHost " && echo "${line}" | grep -q ":443>"; then
 		trigger_ssl_collect=1;
 		if [ $element_written -eq 1 ]; then
@@ -99,10 +100,12 @@ while read line; do
 		if [ "${IP_ADDR}" != "0" ]; then
 			ip_addr="${IP_ADDR}";
 		fi;
-		echo "\"{#IPADDR}\": \"${ip_addr}\"," >> "${SSL_CERT_LIST}";
-		echo "\"{#SSLPORT}\": \"${SSL_PORT}\"," >> "${SSL_CERT_LIST}";
-		echo "\"{#SSLDOMAIN}\": \"${server_name}\"," >> "${SSL_CERT_LIST}";
-		echo "\"{#TIMEOUT}\": \"${TIMEOUT}\"," >> "${SSL_CERT_LIST}";
+		{
+			echo "\"{#IPADDR}\": \"${ip_addr}\",";
+			echo "\"{#SSLPORT}\": \"${SSL_PORT}\",";
+			echo "\"{#SSLDOMAIN}\": \"${server_name}\",";
+			echo "\"{#TIMEOUT}\": \"${TIMEOUT}\",";
+		} >> "${SSL_CERT_LIST}";
 		element_written=1;
 	elif [ $trigger_ssl_collect -eq 1 ] && echo "${line}" | grep -q "SSLCertificateFile"; then
 		server_cert_file=$(echo "${line}" | cut -d " " -f 2- | sed -e 's/^[[:space:]]*//');
