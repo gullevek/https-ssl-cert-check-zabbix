@@ -79,7 +79,7 @@ function result() { echo "$1"; exit 0; }
 
 function get_expire_days() {
 	expire_date=$( echo "$output" \
-	| openssl x509 -noout -enddate 2>/dev/null \
+	| openssl x509 -in /dev/stdin -noout -enddate \
 	| cut -d'=' -f2 )
 
 	expire_date_epoch=$($datecmd -d "$expire_date" +%s) || error "Failed to get expire date"
